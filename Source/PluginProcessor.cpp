@@ -156,9 +156,11 @@ void MidiToDmxAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
        if (msg.isNoteOn())
        {
            currentNote = msg.getNoteNumber();
+           currentNoteName = msg.getMidiNoteName(currentNote, true, true, 4);
+           
            currentColour = mapNoteToColour(currentNote);
 
-           DBG("Note On: " << currentNote
+           DBG("Note On: " << getCurrentNoteName() << " " << currentNote
                << " -> RGB("
                << (int)currentColour.getRed() << ", "
                << (int)currentColour.getGreen() << ", "

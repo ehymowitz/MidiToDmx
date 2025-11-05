@@ -20,6 +20,7 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    juce::Label noteLabel;
 
 private:
     MidiToDmxAudioProcessor& processorRef;

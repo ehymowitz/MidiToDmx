@@ -54,6 +54,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
     
     juce::Colour getCurrentColour() const { return currentColour; }
+    
+    juce::String currentNoteName = "None";
+    juce::String getCurrentNoteName() const { return currentNoteName; }
+    int getCurrentNoteNumber() const { return currentNote; }
 
 private:
     //==============================================================================
