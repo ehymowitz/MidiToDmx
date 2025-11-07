@@ -1,24 +1,16 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <JuceHeader.h>
+#include "NoteColourMap.h"
 
 //==============================================================================
-/**
-*/
 class MidiToDmxAudioProcessor  : public juce::AudioProcessor
 {
 public:
     //==============================================================================
     MidiToDmxAudioProcessor();
     ~MidiToDmxAudioProcessor() override;
+
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -51,18 +43,26 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+
+    // Accessors for the editor
+    juce::Colour getCurrentColour() const noexcept { return currentColour; }
+    juce::String getCurrentNoteName() const noexcept { return currentNoteName; }
+    int getCurrentNoteNumber() const noexcept { return currentNote; }
     
-    juce::Colour getCurrentColour() const { return currentColour; }
-    
-    juce::String currentNoteName = "None";
-    juce::String getCurrentNoteName() const { return currentNoteName; }
-    int getCurrentNoteNumber() const { return currentNote; }
+    void loadNoteColourFile(const juce::File& file) { noteColourMap.loadFromFile(file); }
+    int currentNote = -1;
 
 private:
-    //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiToDmxAudioProcessor)
-    
-    int currentNote = -1;
+    NoteColourMap noteColourMap;
+
+    juce::String currentNoteName = "None";
+
+    double currentFrequency = 0.0;
+    double phase = 0.0;
+    bool isNoteOn = false;
     double sampleCounter = 0.0;
+
     juce::Colour currentColour = juce::Colours::black;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiToDmxAudioProcessor)
 };

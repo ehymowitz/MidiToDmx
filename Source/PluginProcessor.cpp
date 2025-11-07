@@ -10,12 +10,20 @@
 #include "PluginEditor.h"
 
 //==============================================================================
-MidiToDmxAudioProcessor::MidiToDmxAudioProcessor() : AudioProcessor(BusesProperties()
-                                                                    .withOutput("Output", juce::AudioChannelSet::stereo(), true)) {}
-
-MidiToDmxAudioProcessor::~MidiToDmxAudioProcessor()
+MidiToDmxAudioProcessor::MidiToDmxAudioProcessor()
+    : AudioProcessor(BusesProperties()
+                     .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
+    juce::File sourceDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
+                                   .getParentDirectory().getParentDirectory().getParentDirectory();
+       juce::File assetFile = sourceDir.getChildFile("note_colours.json");
+
+       DBG("🎨 Attempting to load NoteColourMap from: " << assetFile.getFullPathName());
+       DBG("🎨 Exists? " << (assetFile.existsAsFile() ? "✅ Yes" : "❌ No"));
+
+       noteColourMap.loadFromFile(assetFile);
 }
+MidiToDmxAudioProcessor::~MidiToDmxAudioProcessor() = default;
 
 //==============================================================================
 const juce::String MidiToDmxAudioProcessor::getName() const
@@ -82,8 +90,7 @@ void MidiToDmxAudioProcessor::changeProgramName (int index, const juce::String& 
 //==============================================================================
 void MidiToDmxAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
 void MidiToDmxAudioProcessor::releaseResources()
@@ -119,54 +126,51 @@ bool MidiToDmxAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 #endif
 
 void MidiToDmxAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
-{
-    
-    juce::ScopedNoDenormals noDenormals;
+{ juce::ScopedNoDenormals noDenormals;
     const int numSamples = buffer.getNumSamples();
     const double sampleRate = getSampleRate();
     
+    // we don't generate audio; clear buffer
     buffer.clear();
-
+    
+    // example: trigger a random note each second (test)
     sampleCounter += numSamples;
-    if (sampleCounter >= sampleRate){
+    if (sampleCounter >= sampleRate)
+    {
         sampleCounter = 0;
-
-        int randomNote = 40 + (rand() % 40);
-        juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, randomNote, (juce::uint8)100);
+        int randomNote = 40 + (std::rand() % 40);
+        auto noteOn = juce::MidiMessage::noteOn(1, randomNote, (juce::uint8)100);
+        auto noteOff = juce::MidiMessage::noteOff(1, randomNote);
         midiMessages.addEvent(noteOn, 0);
-
-        juce::MidiMessage noteOff = juce::MidiMessage::noteOff(1, randomNote);
         midiMessages.addEvent(noteOff, (int)(0.4 * sampleRate));
     }
     
-    
-    auto mapNoteToColour = [](int note) -> juce::Colour{
-        float t = juce::jlimit(0.0f, 1.0f, note / 127.0f);
-
-        uint red   = (uint)(std::sin(t * juce::MathConstants<float>::pi) * 255);
-        uint green = (uint)(std::sin(t * juce::MathConstants<float>::pi * 1.5f) * 255);
-        uint blue  = (uint)(std::cos(t * juce::MathConstants<float>::pi) * 255);
-
-        return juce::Colour::fromRGB(red, green, blue);
-    };
-
-    for (const auto metadata : midiMessages){
-       const auto msg = metadata.getMessage();
-
-       if (msg.isNoteOn())
-       {
-           currentNote = msg.getNoteNumber();
-           currentNoteName = msg.getMidiNoteName(currentNote, true, true, 4);
-           
-           currentColour = mapNoteToColour(currentNote);
-
-           DBG("Note On: " << getCurrentNoteName() << " " << currentNote
-               << " -> RGB("
-               << (int)currentColour.getRed() << ", "
-               << (int)currentColour.getGreen() << ", "
-               << (int)currentColour.getBlue() << ")");
-       }
-   }
+    // process all midi events this block
+    for (const auto metadata : midiMessages)
+    {
+        const auto msg = metadata.getMessage();
+        
+        if (msg.isNoteOn())
+        {
+            currentNote = msg.getNoteNumber();
+            
+            // get readable note name, e.g., "C#4"
+            currentNoteName = juce::MidiMessage::getMidiNoteName(currentNote, true, true, 4);
+            
+            // lookup colour by note name
+            currentColour = noteColourMap.getColourForNote(currentNoteName);
+            
+            DBG("Note On: " << currentNoteName << " (" << currentNote << ") -> RGB("
+                << (int)currentColour.getRed() << ", "
+                << (int)currentColour.getGreen() << ", "
+                << (int)currentColour.getBlue() << ")");
+        }
+        else if (msg.isNoteOff())
+        {
+            // optional handling
+            // isNoteOn = false; // not used here
+        }
+    }
 }
 
 //==============================================================================
