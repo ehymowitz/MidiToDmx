@@ -6,30 +6,6 @@ MidiToDmxAudioProcessorEditor::MidiToDmxAudioProcessorEditor(MidiToDmxAudioProce
 {
     setSize(400, 300);
 
-    // Add the load button
-    addAndMakeVisible(loadButton);
-    loadButton.onClick = [this]
-    {
-        // Ensure we run on the message thread
-        juce::MessageManager::callAsync([this] {
-            juce::FileChooser chooser("Select your note_colours.json file",
-                                      juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
-                                      "*.json");
-
-            chooser.launchAsync(juce::FileBrowserComponent::openMode
-                                | juce::FileBrowserComponent::canSelectFiles,
-                                [this](const juce::FileChooser& fc)
-            {
-                auto file = fc.getResult();
-                if (file.existsAsFile())
-                {
-                    processorRef.loadNoteColourFile(file);
-                    DBG("✅ Loaded NoteColourMap from: " << file.getFullPathName());
-                }
-            });
-        });
-    };
-
     // Add a label to display the current note
     addAndMakeVisible(noteLabel);
     noteLabel.setText("No Note", juce::dontSendNotification);
@@ -47,7 +23,6 @@ void MidiToDmxAudioProcessorEditor::paint(juce::Graphics& g)
 
 void MidiToDmxAudioProcessorEditor::resized()
 {
-    loadButton.setBounds(10, 10, getWidth() - 20, 30);
     noteLabel.setBounds(10, 50, getWidth() - 20, 30);
 }
 
@@ -61,17 +36,28 @@ void MidiToDmxAudioProcessorEditor::timerCallback()
     repaint(); // repaint background color
 }
 
-// Drag-and-drop support
+bool MidiToDmxAudioProcessorEditor::isInterestedInFileDrag(const juce::StringArray& files)
+{
+    // Accept .json files only
+    for (auto& f : files)
+        if (f.endsWithIgnoreCase(".json"))
+            return true;
+
+    return false;
+}
+
 void MidiToDmxAudioProcessorEditor::filesDropped(const juce::StringArray& files, int x, int y)
 {
-    DBG("Files dropped: " << files.joinIntoString(", "));
-    for (auto& f : files)
+    juce::ignoreUnused(x, y);
+
+    juce::File file(files[0]);
+
+    if (file.existsAsFile())
     {
-        juce::File file(f);
-        if (file.existsAsFile() && file.hasFileExtension("json"))
-        {
-            processorRef.loadNoteColourFile(file);
-            DBG("✅ Loaded NoteColourMap via drag & drop: " << file.getFullPathName());
-        }
+        processorRef.loadNoteColourFile(file);
+        DBG("Dropped JSON file loaded: " << file.getFullPathName());
+
+        // Optional: update UI label
+        noteLabel.setText("Loaded: " + file.getFileName(), juce::dontSendNotification);
     }
 }

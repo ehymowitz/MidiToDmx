@@ -13,16 +13,7 @@
 MidiToDmxAudioProcessor::MidiToDmxAudioProcessor()
     : AudioProcessor(BusesProperties()
                      .withOutput("Output", juce::AudioChannelSet::stereo(), true))
-{
-    juce::File sourceDir = juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-                                   .getParentDirectory().getParentDirectory().getParentDirectory();
-       juce::File assetFile = sourceDir.getChildFile("note_colours.json");
-
-       DBG("🎨 Attempting to load NoteColourMap from: " << assetFile.getFullPathName());
-       DBG("🎨 Exists? " << (assetFile.existsAsFile() ? "✅ Yes" : "❌ No"));
-
-       noteColourMap.loadFromFile(assetFile);
-}
+{}
 MidiToDmxAudioProcessor::~MidiToDmxAudioProcessor() = default;
 
 //==============================================================================
@@ -159,6 +150,7 @@ void MidiToDmxAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             
             // lookup colour by note name
             currentColour = noteColourMap.getColourForNote(currentNoteName);
+            
             
             DBG("Note On: " << currentNoteName << " (" << currentNote << ") -> RGB("
                 << (int)currentColour.getRed() << ", "

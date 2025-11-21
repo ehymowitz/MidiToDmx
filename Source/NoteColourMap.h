@@ -9,7 +9,7 @@ public:
     // Load from a JSON file
     void loadFromFile(const juce::File& file);
 
-    // Get colour by note name (returns fallback if not found)
+    // Get colour by note name (returns white if not found)
     juce::Colour getColourForNote(const juce::String& noteName) const;
 
 private:
