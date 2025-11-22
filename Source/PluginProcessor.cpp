@@ -118,23 +118,23 @@ bool MidiToDmxAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
 void MidiToDmxAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 { juce::ScopedNoDenormals noDenormals;
-    const int numSamples = buffer.getNumSamples();
-    const double sampleRate = getSampleRate();
+//    const int numSamples = buffer.getNumSamples();
+//    const double sampleRate = getSampleRate();
     
     // we don't generate audio; clear buffer
     buffer.clear();
     
-    // example: trigger a random note each second (test)
-    sampleCounter += numSamples;
-    if (sampleCounter >= sampleRate)
-    {
-        sampleCounter = 0;
-        int randomNote = 40 + (std::rand() % 40);
-        auto noteOn = juce::MidiMessage::noteOn(1, randomNote, (juce::uint8)100);
-        auto noteOff = juce::MidiMessage::noteOff(1, randomNote);
-        midiMessages.addEvent(noteOn, 0);
-        midiMessages.addEvent(noteOff, (int)(0.4 * sampleRate));
-    }
+    // Comment this to only read midi notes
+//    sampleCounter += numSamples;
+//    if (sampleCounter >= sampleRate)
+//    {
+//        sampleCounter = 0;
+//        int randomNote = 40 + (std::rand() % 40);
+//        auto noteOn = juce::MidiMessage::noteOn(1, randomNote, (juce::uint8)100);
+//        auto noteOff = juce::MidiMessage::noteOff(1, randomNote);
+//        midiMessages.addEvent(noteOn, 0);
+//        midiMessages.addEvent(noteOff, (int)(0.4 * sampleRate));
+//    }
     
     // process all midi events this block
     for (const auto metadata : midiMessages)
